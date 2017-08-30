@@ -3,19 +3,62 @@ PROJECT(RpolyPlusPlus C CXX)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# By default, the unit tests will be built.
-OPTION(BUILD_TESTING "Enable testing" ON)
-
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Set Minimum Eigen version and find the installed package.
-SET(MIN_EIGEN_VERSION 3.2.0)
-FIND_PACKAGE(Eigen ${MIN_EIGEN_VERSION} REQUIRED)
+# System info ==========================================================
+message("=============================================================")
+cmake_host_system_information(RESULT HOST_HOSTNAME QUERY HOSTNAME)
+cmake_host_system_information(RESULT HOST_NUMBER_OF_LOGICAL_CORES QUERY NUMBER_OF_LOGICAL_CORES)
+cmake_host_system_information(RESULT HOST_NUMBER_OF_PHYSICAL_CORES QUERY NUMBER_OF_PHYSICAL_CORES)
+cmake_host_system_information(RESULT HOST_TOTAL_VIRTUAL_MEMORY QUERY TOTAL_VIRTUAL_MEMORY)
+cmake_host_system_information(RESULT HOST_AVAILABLE_VIRTUAL_MEMORY QUERY AVAILABLE_VIRTUAL_MEMORY)
+cmake_host_system_information(RESULT HOST_TOTAL_PHYSICAL_MEMORY QUERY TOTAL_PHYSICAL_MEMORY)
+cmake_host_system_information(RESULT HOST_AVAILABLE_PHYSICAL_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
+
+message(STATUS "HOSTNAME: ${HOST_HOSTNAME}")
+message(STATUS "NUMBER_OF_LOGICAL_CORES: ${HOST_NUMBER_OF_LOGICAL_CORES}")
+message(STATUS "NUMBER_OF_PHYSICAL_CORES: ${HOST_NUMBER_OF_PHYSICAL_CORES}")
+message(STATUS "TOTAL_VIRTUAL_MEMORY: ${HOST_TOTAL_VIRTUAL_MEMORY}")
+message(STATUS "AVAILABLE_VIRTUAL_MEMORY: ${HOST_AVAILABLE_VIRTUAL_MEMORY}")
+message(STATUS "TOTAL_PHYSICAL_MEMORY: ${HOST_TOTAL_PHYSICAL_MEMORY}")
+message(STATUS "AVAILABLE_PHYSICAL_MEMORY: ${HOST_AVAILABLE_PHYSICAL_MEMORY}")
+
+# Compilation at Maur ==================================================
+if(${HOST_HOSTNAME} MATCHES login.* OR ${HOST_HOSTNAME} MATCHES compute.*)
+  option(COMPILATION_AT_MAUR " " ON)
+else()
+  option(COMPILATION_AT_MAUR " " OFF)
+endif()
+
+# Maur =================================================================
+message("=============================================================")
+if(COMPILATION_AT_MAUR)
+
+  OPTION(BUILD_TESTING "Enable testing" OFF)
+
+  # EIGEN
+  set(EIGEN3_INCLUDE_DIR $ENV{HOME}/git/libraries/eigen3.3-beta1-2/Eigen)
+  include_directories($ENV{HOME}/git/libraries/eigen3.3-beta1-2)
+  include_directories(${EIGEN3_INCLUDE_DIR})
+  message(STATUS "EIGEN3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR}")
+
+else()
+
+  # By default, the unit tests will be built.
+  OPTION(BUILD_TESTING "Enable testing" ON)
+
+  # Set Minimum Eigen version and find the installed package.
+  SET(MIN_EIGEN_VERSION 3.2.0)
+  FIND_PACKAGE(Eigen ${MIN_EIGEN_VERSION} REQUIRED)
+
+endif()
+
 IF (EIGEN_FOUND)
   MESSAGE("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
 ENDIF (EIGEN_FOUND)
+
 
 # Use a larger inlining threshold for Clang, since it hobbles Eigen,
 # resulting in an unreasonably slow version of the blas routines. The
@@ -46,7 +89,8 @@ ENDIF ()
 # Note that this is *not* propagated to clients, ie CERES_INCLUDE_DIRS
 # used by clients after find_package(Ceres) does not identify Eigen as
 # as system headers.
-INCLUDE_DIRECTORIES(SYSTEM ${EIGEN_INCLUDE_DIRS})
+#INCLUDE_DIRECTORIES(SYSTEM ${EIGEN_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(SYSTEM ${EIGEN3_INCLUDE_DIR})
 
 SET(RPOLY_PLUS_PLUS_SRCS
   src/polynomial.cc
